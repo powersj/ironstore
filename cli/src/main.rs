@@ -1,9 +1,14 @@
-use tokio::net::TcpStream;
-use tokio::io::{self, AsyncWriteExt, AsyncReadExt, BufReader, AsyncBufReadExt};
 use clap::{Arg, Command, ArgAction};
+use std::net::TcpStream;
+use std::fs::File;
+use std::io::Write;
+use std::io::Read;
+use std::io::Result;
+use std::io;
+use std::io::BufReader;
+use std::io::BufRead;
 
-#[tokio::main]
-async fn main() -> io::Result<()> {
+fn main() -> io::Result<()> {
     let matches = Command::new("Client")
         .version("1.0")
         .author("Joshua Powers <powersj@fastmail.com>")
@@ -24,52 +29,62 @@ async fn main() -> io::Result<()> {
 
     let port: &String = matches.get_one("port").unwrap();
     let address = format!("127.0.0.1:{}", port);
-    let mut stream = TcpStream::connect(&address).await.expect("Failed to connect to server");
+    let mut stream = TcpStream::connect(&address).expect("Failed to connect to server");
 
     if let Some(file_path) = matches.get_one::<String>("file") {
-        send_commands_from_file(&mut stream, file_path).await?;
+        send_commands_from_file(&mut stream, file_path);
     } else if let Some(commands) = matches.get_many::<String>("COMMAND") {
         let command: Vec<&String> = commands.collect::<Vec<_>>();
         let message = command.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(" ");
-        send_command(&mut stream, &message).await?;
+        send_command(&mut stream, &message);
     } else {
-        interactive_mode(&mut stream).await?;
+        interactive_mode(&mut stream);
     }
 
     Ok(())
 }
 
-async fn send_commands_from_file(stream: &mut TcpStream, file_path: &str) -> io::Result<()> {
-    for line in std::fs::read_to_string(file_path).unwrap().lines() {
-        send_command(stream, line).await?;
+fn send_commands_from_file(stream: &mut TcpStream, file_path: &str) -> Result<()> {
+    let file = File::open(file_path)?;
+    let reader = BufReader::new(file);
+
+    for line in reader.lines() {
+        let line = line.expect("Unable to read line");
+        send_command(stream, &line);
     }
 
     Ok(())
 }
 
-async fn send_command(stream: &mut TcpStream, message: &str) -> io::Result<()> {
-    stream.write_all(message.as_bytes()).await?;
+fn send_command(stream: &mut TcpStream, message: &str) -> Result<()> {
+    stream.write_all(message.as_bytes());
 
     let mut buffer = [0; 1024];
-    let n = stream.read(&mut buffer).await?;
+    let n = stream.read(&mut buffer)?;
     if n > 0 {
         let response = std::str::from_utf8(&buffer[..n]).expect("Failed to parse response as UTF-8");
-        println!("> {}", response);
+        println!("{}", response);
     }
+
     Ok(())
 }
 
-async fn interactive_mode(stream: &mut TcpStream) -> io::Result<()> {
+fn interactive_mode(stream: &mut TcpStream) -> Result<()> {
     println!("Enter commands to send to the server. Type 'exit' to quit.");
+    print!("> ");
+    io::stdout().flush();
 
     let stdin = io::stdin();
     let mut lines = BufReader::new(stdin).lines();
-    while let Some(line) = lines.next_line().await? {
-        if line.to_lowercase() == "exit" {
+    while let Some(line) = lines.next() {
+        let l = line.unwrap();
+        if l.to_lowercase() == "exit" {
             break;
         }
 
-        send_command(stream, &line).await?;
+        send_command(stream, &l);
+        print!("> ");
+        io::stdout().flush();
     }
 
     Ok(())
