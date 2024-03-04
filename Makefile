@@ -5,7 +5,7 @@ all: server cli
 
 .PHONY: server
 server:
-	cargo build
+	cargo build --bin ironstore-server && ./target/debug/ironstore-server
 
 .PHONY: clean
 clean:
@@ -13,7 +13,7 @@ clean:
 
 .PHONY: cli
 cli:
-	cargo build
+	cargo build --bin ironstore-cli && ./target/debug/ironstore-cli
 
 .PHONY: lint
 lint:

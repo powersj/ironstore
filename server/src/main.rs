@@ -34,8 +34,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
                 };
 
-                info!("Received {} bytes from {}: {}", n, addr, s);
-                if let Err(e) = socket.write_all(&buf[0..n]).await {
+                info!("Received {} bytes from {}: '{}'", n, addr, s);
+
+                if let Err(e) = socket.write_all(s.as_bytes()).await {
                     eprintln!("Failed to write to socket; err = {:?}", e);
                     return;
                 }
