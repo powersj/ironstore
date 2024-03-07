@@ -169,7 +169,8 @@ name = "ironstore-cli"
 version = "0.1.0"
 dependencies = [
  "clap",
- "tokio",
+ "log",
+ "simplelog",
 ]
 
 [[package]]
@@ -177,7 +178,6 @@ name = "ironstore-server"
 version = "0.1.0"
 dependencies = [
  "clap",
- "keyword-parser",
  "log",
  "simplelog",
  "tokio",
@@ -188,10 +188,6 @@ name = "itoa"
 version = "1.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1a46d1a171d865aa5f83f92695765caa047a9b4cbae2cbf37dbd613a793fd4c"
-
-[[package]]
-name = "keyword-parser"
-version = "0.1.0"
 
 [[package]]
 name = "libc"
@@ -380,9 +376,9 @@ dependencies = [
 
 [[package]]
 name = "simplelog"
-version = "0.12.1"
+version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acee08041c5de3d5048c8b3f6f13fafb3026b24ba43c6a695a0c76179b844369"
+checksum = "16257adbfaef1ee58b1363bdc0664c9b8e1e30aed86049635fb5f147d065a9c0"
 dependencies = [
  "log",
  "termcolor",

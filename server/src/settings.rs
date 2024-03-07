@@ -1,9 +1,10 @@
-use keyword_parser::parse_config_file;
 use clap::{Arg, Command};
-use simplelog::*;
+use log::LevelFilter;
+use simplelog::{WriteLogger, Config};
 use std::collections::HashMap;
 use std::fs::File;
-use log::LevelFilter;
+use std::io::{self, BufRead};
+use std::path::Path;
 
 pub fn parse() -> HashMap<String, Vec<String>> {
     let matches = Command::new("My Server")
@@ -16,19 +17,24 @@ pub fn parse() -> HashMap<String, Vec<String>> {
              .value_name("FILE")
              .help("Sets a custom config file")
         )
+        .arg(Arg::new("host")
+             .long("host")
+             .help("Sets the host to listen on")
+             .default_value("127.0.0.1")
+        )
         .arg(Arg::new("port")
              .long("port")
              .help("Sets the port to listen on")
              .default_value("8080")
         )
+        .arg(Arg::new("logfile")
+             .long("logfile")
+             .help("Sets the file to log to")
+        )
         .arg(Arg::new("loglevel")
              .long("loglevel")
              .help("Sets the logging level (error, warn, info, debug, trace)")
              .default_value("debug")
-        )
-        .arg(Arg::new("logfile")
-             .long("logfile")
-             .help("Sets the file to log to")
         )
         .get_matches();
 
@@ -39,6 +45,9 @@ pub fn parse() -> HashMap<String, Vec<String>> {
     };
 
     // Override settings with CLI args if provided
+    if let Some(host) = matches.get_one::<String>("host") {
+        settings.insert("host".to_string(), vec![host.to_string()]);
+    }
     if let Some(port) = matches.get_one::<String>("port") {
         settings.insert("port".to_string(), vec![port.to_string()]);
     }
@@ -68,4 +77,22 @@ pub fn parse() -> HashMap<String, Vec<String>> {
     }
 
     settings
+}
+
+pub fn parse_config_file<P: AsRef<Path>>(path: P) -> io::Result<HashMap<String, Vec<String>>> {
+    let file = File::open(path)?;
+    let reader = io::BufReader::new(file);
+
+    let mut config = HashMap::new();
+
+    for line in reader.lines() {
+        let line = line?;
+        let mut parts = line.split_whitespace();
+        if let Some(keyword) = parts.next() {
+            let arguments: Vec<String> = parts.map(String::from).collect();
+            config.insert(keyword.to_string(), arguments);
+        }
+    }
+
+    Ok(config)
 }

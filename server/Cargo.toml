@@ -10,6 +10,5 @@ path = "src/main.rs"
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
 clap = "4.5.1"
-keyword-parser = { path = "../config" }
 log = "0.4"
-simplelog = "*"
+simplelog = "0.12.2"

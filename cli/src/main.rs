@@ -3,6 +3,9 @@ use std::net::TcpStream;
 use std::fs::File;
 use std::io;
 use std::io::{BufRead, BufReader, Read, Write};
+use log::debug;
+use log::LevelFilter;
+use simplelog::{WriteLogger, Config};
 
 fn main() {
     let matches = Command::new("Client")
@@ -13,6 +16,17 @@ fn main() {
             .long("file")
             .help("Read commands rom a file")
             .required(false)
+        )
+        .arg(Arg::new("host")
+            .long("host")
+            .help("The host to connect to")
+            .default_value("127.0.0.1")
+            .required(false)
+        )
+        .arg(Arg::new("loglevel")
+             .long("loglevel")
+             .help("Sets the logging level (error, warn, info, debug, trace)")
+             .default_value("debug")
         )
         .arg(Arg::new("port")
             .long("port")
@@ -25,8 +39,21 @@ fn main() {
         )
         .get_matches();
 
+    let level: &String = matches.get_one("loglevel").unwrap();
+    let log_level =  match level.as_str() {
+        "error" => LevelFilter::Error,
+        "warn" => LevelFilter::Warn,
+        "info" => LevelFilter::Info,
+        "debug" => LevelFilter::Debug,
+        "trace" => LevelFilter::Trace,
+        _ => LevelFilter::Info,
+    };
+    let _ = WriteLogger::init(log_level, Config::default(), std::io::stderr());
+
     let port: &String = matches.get_one("port").unwrap();
-    let address = format!("127.0.0.1:{}", port);
+    let host: &String = matches.get_one("host").unwrap();
+    let address = format!("{}:{}", host, port);
+    debug!("connecting to {}", address);
     let mut stream = TcpStream::connect(address).expect("Failed to connect to server");
 
     if let Some(file_path) = matches.get_one::<String>("file") {
@@ -41,6 +68,7 @@ fn main() {
 }
 
 fn send_commands_from_file(stream: &mut TcpStream, file_path: &str) {
+    debug!("reading file {}", file_path);
     let file = File::open(file_path).unwrap();
     let reader = BufReader::new(file);
 
