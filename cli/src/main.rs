@@ -7,6 +7,7 @@ use log::debug;
 use log::LevelFilter;
 use simplelog::{WriteLogger, Config};
 
+/// Main function.
 fn main() {
     let matches = Command::new("Client")
         .version("1.0")
@@ -52,7 +53,7 @@ fn main() {
 
     let port: &String = matches.get_one("port").unwrap();
     let host: &String = matches.get_one("host").unwrap();
-    let address = format!("{}:{}", host, port);
+    let address = format!("{host}:{port}");
     debug!("connecting to {}", address);
     let mut stream = TcpStream::connect(address).expect("Failed to connect to server");
 
@@ -67,6 +68,7 @@ fn main() {
     }
 }
 
+/// Send commands from a file, line-by-line.
 fn send_commands_from_file(stream: &mut TcpStream, file_path: &str) {
     debug!("reading file {}", file_path);
     let file = File::open(file_path).unwrap();
@@ -78,6 +80,7 @@ fn send_commands_from_file(stream: &mut TcpStream, file_path: &str) {
     }
 }
 
+/// Send single command.
 fn send_command(stream: &mut TcpStream, message: &str) {
     stream.write_all(message.as_bytes()).unwrap();
 
@@ -89,6 +92,7 @@ fn send_command(stream: &mut TcpStream, message: &str) {
     }
 }
 
+/// Interactive mode function.
 fn interactive_mode(stream: &mut TcpStream) {
     println!("Enter commands to send to the server. Type 'exit' to quit.");
     print!("> ");

@@ -1,6 +1,6 @@
-use log::info;
-use std::str;
 use std::collections::HashMap;
+use std::error::Error;
+use std::str;
 use std::sync::{Arc, Mutex};
 use tokio::io::AsyncReadExt;
 
@@ -9,6 +9,7 @@ mod listener;
 mod settings;
 
 #[tokio::main]
+/// Main function.
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let settings = settings::parse();
     let listener = listener::create_listener(settings).await;
@@ -23,56 +24,68 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             loop {
                 let _n = match socket.read(&mut buf).await {
                     Ok(0) => return,
-                    Ok(n) => n,
-                    Err(e) => {
-                        eprintln!("Failed to read from socket; err = {:?}", e);
+                    Ok(num) => num,
+                    Err(err) => {
+                        eprintln!("Failed to read from socket; err = {err:?}");
                         return;
                     }
                 };
 
-                let s = match str::from_utf8(&buf) {
-                    Ok(v) => v,
-                    Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+                let msg = match str::from_utf8(&buf) {
+                    Ok(val) => val,
+                    Err(err) => panic!("Invalid UTF-8 sequence: {err}"),
                 };
 
-                let commands:Vec<String> = s.trim_end_matches('\x00').split_whitespace().map(str::to_string).collect();
-                let result = match_action(data_clone.clone(), commands).await; // Call match_action and get its result
-                let _ = listener::send_over_tcp(&mut socket, result).await; // Send the result over TCP
+                let commands:Vec<String> = msg.trim_end_matches('\x00').split_whitespace().map(str::to_string).collect();
+                let result = match_action(data_clone.clone(), commands).await;
+                let _: Result<(), Box<dyn Error>> = listener::send_over_tcp(&mut socket, result).await;
             }
         });
     }
 }
 
 
-// Updated match_action to return Result<String, String>
+/// Determine action to run and return result.
 async fn match_action(shared_data: Arc<Mutex<HashMap<String, String>>>, commands: Vec<String>) -> Result<String, String> {
     if commands.is_empty() {
-        return Err("No command provided".to_string());
+        return Err("No command provided".to_owned());
     }
 
-    match commands[0].as_str() {
+    match commands.first().unwrap().as_str() {
         "del" => {
             if commands.len() < 2 {
-                return Err("No key provided for delete".to_string());
+                return Err("No key provided for delete".to_owned());
             }
-            let key = commands[1].clone();
-            action::del(shared_data, key).await
+            let key = commands.get(1).unwrap();
+            action::del(shared_data, key)
+        },
+        "flushall" => {
+            action::flushall(shared_data)
         },
         "get" => {
             if commands.len() < 2 {
-                return Err("No key provided for get".to_string());
+                return Err("No key provided for get".to_owned());
             }
-            let key = commands[1].clone();
-            action::get(shared_data, key).await
+            let key = commands.get(1).unwrap();
+            action::get(shared_data, key)
+        },
+        "info" => {
+            action::info()
+        },
+        "keys" => {
+            action::keys(shared_data)
+        },
+        "ping" => {
+            action::ping()
         },
         "set" => {
             if commands.len() < 3 {
-                return Err("Not enough arguments for set".to_string());
+                return Err("Not enough arguments for set".to_owned());
             }
-            let key = commands[1].clone();
-            let value = commands[2].clone();
-            action::set(shared_data.clone(), key, value).await
+            let key = commands.get(1).unwrap();
+            let value = commands.get(2).unwrap();
+            action::set(shared_data.clone(), key, value)
         },
-        _ => Err("Unsupported command".to_string()),
+        _ => Err("Unsupported command".to_owned()),
     }
 }

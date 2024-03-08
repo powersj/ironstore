@@ -9,7 +9,6 @@ Near term TODO for me to go through.
 
 ## Server
 
-* Add strings data type: sequence of bytes in hashmap
 * Way to keep track of metrics
   * Number of databases
   * Number of keys per database
