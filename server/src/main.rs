@@ -36,9 +36,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Err(err) => panic!("Invalid UTF-8 sequence: {err}"),
                 };
 
-                let commands:Vec<String> = msg.trim_end_matches('\x00').split_whitespace().map(str::to_string).collect();
-                let result = match_action(data_clone.clone(), commands).await;
-                let _: Result<(), Box<dyn Error>> = listener::send_over_tcp(&mut socket, result).await;
+                let commands:Vec<String> = msg.trim_end_matches('\x00')
+                    .split_whitespace()
+                    .map(str::to_string).collect();
+                let result = match_action(
+                    data_clone.clone(),
+                    commands
+                );
+                let _: Result<(), Box<dyn Error>> = listener::send_over_tcp(
+                    &mut socket,
+                    result
+                ).await;
             }
         });
     }
@@ -46,7 +54,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
 /// Determine action to run and return result.
-async fn match_action(shared_data: Arc<Mutex<HashMap<String, String>>>, commands: Vec<String>) -> Result<String, String> {
+fn match_action(
+    shared_data: Arc<Mutex<HashMap<String, String>>>,
+    commands: Vec<String>
+) -> Result<String, String> {
     if commands.is_empty() {
         return Err("No command provided".to_owned());
     }
@@ -56,8 +67,7 @@ async fn match_action(shared_data: Arc<Mutex<HashMap<String, String>>>, commands
             if commands.len() < 2 {
                 return Err("No key provided for delete".to_owned());
             }
-            let key = commands.get(1).unwrap();
-            action::del(shared_data, key)
+            action::del(shared_data, &commands[1])
         },
         "flushall" => {
             action::flushall(shared_data)
@@ -66,8 +76,7 @@ async fn match_action(shared_data: Arc<Mutex<HashMap<String, String>>>, commands
             if commands.len() < 2 {
                 return Err("No key provided for get".to_owned());
             }
-            let key = commands.get(1).unwrap();
-            action::get(shared_data, key)
+            action::get(shared_data, &commands[1])
         },
         "info" => {
             action::info()
@@ -82,9 +91,7 @@ async fn match_action(shared_data: Arc<Mutex<HashMap<String, String>>>, commands
             if commands.len() < 3 {
                 return Err("Not enough arguments for set".to_owned());
             }
-            let key = commands.get(1).unwrap();
-            let value = commands.get(2).unwrap();
-            action::set(shared_data.clone(), key, value)
+            action::set(shared_data, &commands[1], &commands[2])
         },
         _ => Err("Unsupported command".to_owned()),
     }
