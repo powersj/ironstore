@@ -1,6 +1,16 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+/// Append the key value into the database.
+pub fn append(shared_data: Arc<Mutex<HashMap<String, String>>>, key: &String, value: &String) -> Result<String, String> {
+    let mut data = shared_data.lock().unwrap();
+    data.entry(key.to_string())
+        .and_modify(|existing| existing.push_str(value))
+        .or_insert(value.to_string());
+
+    Ok("Value appended successfully".to_string())
+}
+
 /// Delete a key in the database.
 pub fn del(shared_data: Arc<Mutex<HashMap<String, String>>>, key: &String) -> Result<String, String> {
     let mut data = shared_data.lock().unwrap();
@@ -21,6 +31,15 @@ pub fn get(shared_data: Arc<Mutex<HashMap<String, String>>>, key: &String) -> Re
     match data.get(&key.to_string()) {
         Some(value) => Ok(value.clone()),
         None => Err("Key not found".to_string()),
+    }
+}
+
+/// Return if a key exists
+pub fn exists(shared_data: Arc<Mutex<HashMap<String, String>>>, key: &String) -> Result<String, String> {
+    let data = shared_data.lock().unwrap();
+    match data.get(&key.to_string()) {
+        Some(_) => Ok("1".to_string()),
+        None => Err("0".to_string()),
     }
 }
 

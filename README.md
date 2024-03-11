@@ -28,7 +28,9 @@ Below outlines the various commands supported by the client:
 
 | Command  | Description                     | Example            |
 |----------|---------------------------------|--------------------|
+| append   | Append to existing value        | `append key value` |
 | del      | Delete value                    | `del key`          |
+| exists   | Does a key exist                | `exists key`       |
 | flushall | Delete all keys and databases   | `flushall`         |
 | get      | Get value                       | `get key`          |
 | info     | Info and stats about the server | `info`             |
@@ -36,19 +38,24 @@ Below outlines the various commands supported by the client:
 | ping     | Test connection                 | `ping`             |
 | set      | Create value                    | `set key value`    |
 
+Note that not all commands have a 1:1 with redis' CLI. There are some additional
+options that are not implemented.
+
 ### Future Commands
 
 Below outlines the commands that would be nice to add to round out the basic
 functionality.
 
-These would be a second phase of additional helpers around modifying and
-interacting with keys and values:
+| Command  | Description                       | Example             |
+|----------|-----------------------------------|---------------------|
+| incr     | Increment key value               | `incr key`          |
+| mget     | Get multiple keys                 | `mget key [key...]` |
+
+The following would add for quick restore functionality:
 
 | Command  | Description                       | Example            |
 |----------|-----------------------------------|--------------------|
-| append   | Append to existing value          | `append key value` |
 | dump     | Serialize value to stdout         | `dump key`         |
-| exists   | Does a key exist                  | `exists key`       |
 | restore  | Restore key from serialized value | `restore key`      |
 
 The following are all related to TTL of a value:

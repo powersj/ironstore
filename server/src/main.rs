@@ -63,6 +63,14 @@ fn match_action(
     }
 
     match commands.first().unwrap().as_str() {
+        "append" => {
+            if commands.len() < 3 {
+                return Err("Not enough arguments for set".to_owned());
+            }
+            let key = commands.get(1).unwrap();
+            let value = commands.get(2).unwrap();
+            action::append(shared_data.clone(), key, value)
+        }
         "del" => {
             if commands.len() < 2 {
                 return Err("No key provided for delete".to_owned());
@@ -72,6 +80,9 @@ fn match_action(
         "flushall" => {
             action::flushall(shared_data)
         },
+        "exists" => {
+            action::exists(shared_data, commands.get(1).unwrap())
+        }
         "get" => {
             if commands.len() < 2 {
                 return Err("No key provided for get".to_owned());
